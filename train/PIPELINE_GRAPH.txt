@@ -1,0 +1,223 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              TEXT-TO-SQL FINETUNING PIPELINE                                ║
+║         (Skeleton Data Training + Schema Linking Inference)                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          TRAINING PIPELINE                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────┐
+    │  Raw Spider Dataset │
+    └──────────┬──────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Data Preprocessing                     │
+    │  - Extract SQL queries                  │
+    │  - Generate SQL skeletons               │
+    │  - Format instruction/response          │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  train_sql_skeleton.jsonl               │
+    │  Format:                                 │
+    │  {                                      │
+    │    "text": "### Instruction:\n...       │
+    │            ### Response:\n              │
+    │            skeleton | actual_sql"       │
+    │  }                                      │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Convert to OpenAI Format               │
+    │  (Optional but recommended)             │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  train_sql_skeleton_openai.jsonl        │
+    │  Format:                                 │
+    │  {                                      │
+    │    "messages": [                        │
+    │      {"role": "system", ...},           │
+    │      {"role": "user", ...},             │
+    │      {"role": "assistant",              │
+    │       "content": "skeleton | sql"}       │
+    │    ]                                    │
+    │  }                                      │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Base Model: Qwen 2.5 7B Instruct       │
+    │  + LoRA/QLoRA Setup                     │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Training Process                       │
+    │  ┌──────────────────────────────────┐  │
+    │  │ Input: Full message sequence     │  │
+    │  │         ↓                        │  │
+    │  │ Tokenize & Create Labels         │  │
+    │  │         ↓                        │  │
+    │  │ System/User: Masked (-100)       │  │
+    │  │ Assistant: Loss computed         │  │
+    │  │         ↓                        │  │
+    │  │ Update LoRA weights              │  │
+    │  └──────────────────────────────────┘  │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Fine-tuned Model                        │
+    │  ./qwen-skeleton-qlora-adapter          │
+    │  Learned: Generate skeleton | sql       │
+    └─────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        INFERENCE PIPELINE                                    │
+│                      (With Schema Linking)                                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────┐
+    │  User Question      │
+    │  "How many heads    │
+    │   older than 56?"   │
+    └──────────┬──────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  SCHEMA LINKING (Before Inference)       │
+    │  ┌──────────────────────────────────┐   │
+    │  │ 1. Load full database schema    │   │
+    │  │ 2. Rank tables by relevance     │   │
+    │  │    - Match question keywords    │   │
+    │  │    - Consider relationships     │   │
+    │  │ 3. Rank columns by relevance    │   │
+    │  │ 4. Remove irrelevant items      │   │
+    │  │ 5. Format: clear context        │   │
+    │  └──────────────────────────────────┘   │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Ranked Schema                          │
+    │  # head ( head_id , name , age )       │
+    │  # department ( ... )                   │
+    │  # management ( ... )                    │
+    │  # head.head_id = management.head_id     │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Format Prompt                          │
+    │  "### Complete sqlite SQL query...      │
+    │   ### Sqlite SQL tables:               │
+    │   #                                     │
+    │   # head ( head_id , name , age )      │
+    │   # ...                                 │
+    │   #                                     │
+    │   ### How many heads older than 56?     │
+    │   SELECT"                               │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Fine-tuned Model Inference             │
+    │  ┌──────────────────────────────────┐   │
+    │  │ Input: Question + Ranked Schema │   │
+    │  │         ↓                        │   │
+    │  │ Generate:                        │   │
+    │  │ "select count ( _ ) from _       │   │
+    │  │  where _ |                       │   │
+    │  │  select count ( * ) from head    │   │
+    │  │  where age > 56"                 │   │
+    │  └──────────────────────────────────┘   │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Post-processing                        │
+    │  Extract: "select count ( * ) from      │
+    │           head where age > 56"           │
+    │  (after the | separator)                │
+    └──────────┬──────────────────────────────┘
+               │
+               ▼
+    ┌─────────────────────────────────────────┐
+    │  Execute SQL Query                      │
+    │  ┌──────────────────────────────────┐   │
+    │  │ Database: department_management  │   │
+    │  │ Query: select count(*) from head │   │
+    │  │        where age > 56            │   │
+    │  │ Result: 3                        │   │
+    │  └──────────────────────────────────┘   │
+    └──────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          KEY COMPONENTS                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 1. SKELETON DATA FORMAT                                                      │
+│    Format: "skeleton | actual_sql"                                           │
+│    Example: "select count ( _ ) from _ where _ | select count ( * ) from..." │
+│    Benefit: +10-11% accuracy improvement                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 2. SCHEMA LINKING                                                            │
+│    Process: Rank tables/columns by relevance to question                     │
+│    Benefit: +2.7% accuracy improvement                                      │
+│    Applied: Before inference (not during training)                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 3. LOSS MASKING                                                              │
+│    System/User messages: Masked (no loss)                                    │
+│    Assistant messages: Loss computed                                         │
+│    Result: Model learns to generate responses only                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    PERFORMANCE IMPROVEMENTS                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    Base SQL Only:           50.0%
+           │
+           ├─→ + Skeleton Format:  +10-11%  →  60-61%
+           │
+           ├─→ + Schema Ranking:   +2.7%    →  63-64%
+           │
+           └─→ + Clear Context:    +1-2%    →  64-65%
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         COMMAND SEQUENCE                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Step 1: Prepare training data
+python generate-finetune-data.py --mode train --sql_type sql --skeleton --clear_context
+
+# Step 2: Convert to OpenAI format
+python train/convert_to_openai_format.py
+
+# Step 3: Generate ranked schema for validation
+python schema_linking.py
+
+# Step 4: Train model
+llamafactory-cli train train/qwen_skeleton_llamafactory.yaml
+
+# Step 5: Inference with schema linking
+python eval/gen_predictions_qwen.py \
+    --model_path ./qwen-skeleton-qlora-adapter \
+    --input_file data/validation_sql_ranked.json \
+    --output_file predictions/qwen_skeleton.txt
+
+# Step 6: Evaluate
+python eval/evaluation.py --input predictions/qwen_skeleton.txt --gold data/gold.txt
+
+

@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Interactive chat with Qwen2.5-3B-Instruct, optionally with a LoRA adapter from qwen_lora_finetune.py."""
+"""Interactive chat with Qwen2.5-3B-Instruct, optionally with a LoRA adapter."""
 
 import argparse
+import inspect
+import json
+import os
 import sys
 
 import torch
-from peft import PeftModel
+from peft import LoraConfig, PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from qwen_lora_finetune import QwenLoraConfig
+
+from qwen_lora_finetune_mine import QwenLoraConfig
 
 
 def parse_args():
@@ -63,6 +67,23 @@ def input_device_for(model: torch.nn.Module) -> torch.device:
     return next(model.parameters()).device
 
 
+def load_lora_adapter(model: torch.nn.Module, adapter_path: str) -> PeftModel:
+    """Load PEFT weights; filter adapter_config keys so older peft can load configs from newer trainers."""
+    cfg_path = os.path.join(adapter_path, "adapter_config.json")
+    with open(cfg_path, encoding="utf-8") as f:
+        raw = json.load(f)
+    allowed = set(inspect.signature(LoraConfig.__init__).parameters) - {"self"}
+    filtered = {k: v for k, v in raw.items() if k in allowed}
+    dropped = set(raw) - set(filtered)
+    if dropped:
+        print(
+            "Note: ignoring adapter_config keys not supported by this peft version "
+            f"(upgrade peft to preserve them): {sorted(dropped)}"
+        )
+    peft_config = LoraConfig(**filtered)
+    return PeftModel.from_pretrained(model, adapter_path, config=peft_config)
+
+
 def main():
     args = parse_args()
     torch_dtype = pick_dtype(args.bf16)
@@ -86,7 +107,7 @@ def main():
 
     if args.adapter_path:
         print(f"Loading LoRA adapter: {args.adapter_path}")
-        model = PeftModel.from_pretrained(model, args.adapter_path)
+        model = load_lora_adapter(model, args.adapter_path)
 
     model.eval()
     dev = input_device_for(model)

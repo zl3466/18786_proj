@@ -1,0 +1,44 @@
+  0%|                                                                                                                                                | 0/3000 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/train/qwen_lora_finetune.py", line 413, in <module>
+    main(
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/train/qwen_lora_finetune.py", line 295, in main
+    trainer.train()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1425, in train
+    return inner_training_loop(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1507, in _inner_training_loop
+    self._run_epoch(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1757, in _run_epoch
+    grad_norm = self._clip_grad_norm(model)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 2494, in _clip_grad_norm
+    return self.accelerator.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2994, in clip_grad_norm_
+    self.unscale_gradients()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2932, in unscale_gradients
+    self.scaler.unscale_(opt)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/amp/grad_scaler.py", line 358, in unscale_
+    optimizer_state["found_inf_per_device"] = self._unscale_grads_(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/amp/grad_scaler.py", line 275, in _unscale_grads_
+    raise ValueError("Attempting to unscale FP16 gradients.")
+ValueError: Attempting to unscale FP16 gradients.
+Traceback (most recent call last):
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/train/qwen_lora_finetune.py", line 413, in <module>
+    main(
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/train/qwen_lora_finetune.py", line 295, in main
+    trainer.train()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1425, in train
+    return inner_training_loop(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1507, in _inner_training_loop
+    self._run_epoch(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1757, in _run_epoch
+    grad_norm = self._clip_grad_norm(model)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 2494, in _clip_grad_norm
+    return self.accelerator.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2994, in clip_grad_norm_
+    self.unscale_gradients()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2932, in unscale_gradients
+    self.scaler.unscale_(opt)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/amp/grad_scaler.py", line 358, in unscale_
+    optimizer_state["found_inf_per_device"] = self._unscale_grads_(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/amp/grad_scaler.py", line 275, in _unscale_grads_
+    raise ValueError("Attempting to unscale FP16 gradients.")
+ValueError: Attempting to unscale FP16 gradients.

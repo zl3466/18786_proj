@@ -1,0 +1,66 @@
+### model
+model_name_or_path: Qwen/Qwen2.5-7B-Instruct
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 64
+lora_alpha: 32
+lora_dropout: 0.1
+quantization_bit: 4
+quantization_type: nf4
+compute_dtype: float16
+# Double quantization for better compression (saves more memory)
+use_double_quant: true
+
+### dataset
+dataset: sql_skeleton:train,sql_skeleton:validation
+dataset_dir: train
+template: default
+cutoff_len: 2048
+overwrite_cache: false
+preprocessing_num_workers: 16
+
+### output
+output_dir: ./qwen-skeleton-qlora-adapter
+logging_steps: 10
+save_steps: 500
+save_total_limit: 3  # Keep only last 3 checkpoints
+plot_loss: true
+overwrite_output_dir: true
+report_to: tensorboard  # Better visualization
+
+### train
+per_device_train_batch_size: 8  # Increased from 4 (better if you have VRAM)
+gradient_accumulation_steps: 2  # Effective batch size = 16
+learning_rate: 2.0e-4  # Can reduce to 1e-4 if unstable
+lr_scheduler_type: cosine  # Better than linear for longer training
+warmup_ratio: 0.1
+num_train_epochs: 3.0
+max_steps: 3000
+max_grad_norm: 0.3
+fp16: true
+optim: paged_adamw_32bit
+group_by_length: true  # Groups similar length sequences for efficiency
+gradient_checkpointing: true  # Saves ~50% memory, slight speed tradeoff
+
+### eval
+val_size: 0.1  # Use 10% of training data for validation
+eval_strategy: steps
+eval_steps: 500
+load_best_model_at_end: true
+metric_for_best_model: eval_loss
+greater_is_better: false
+
+
+
+
+
+
+
+
+
+

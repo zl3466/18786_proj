@@ -1,0 +1,28 @@
+{
+  "sql_skeleton": {
+    "file_name": "../data/train_sql_skeleton.jsonl",
+    "columns": {
+      "prompt": "text",
+      "query": "",
+      "response": "",
+      "history": ""
+    },
+    "formatting": "sharegpt",
+    "tags": {
+      "instruction_tag": "### Instruction:",
+      "response_tag": "### Response:",
+      "user_tag": "",
+      "assistant_tag": ""
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+

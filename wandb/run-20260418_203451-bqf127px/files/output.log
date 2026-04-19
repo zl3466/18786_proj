@@ -62,3 +62,102 @@
 {'loss': '0.1545', 'grad_norm': '0.2399', 'learning_rate': '0.0001936', 'entropy': '0.1704', 'num_tokens': '2.558e+06', 'mean_token_accuracy': '0.9616', 'epoch': '1.393'}
 {'loss': '0.1436', 'grad_norm': '0.1144', 'learning_rate': '0.0001932', 'entropy': '0.1737', 'num_tokens': '2.6e+06', 'mean_token_accuracy': '0.9615', 'epoch': '1.416'}
 {'loss': '0.1516', 'grad_norm': '0.1875', 'learning_rate': '0.0001928', 'entropy': '0.172', 'num_tokens': '2.64e+06', 'mean_token_accuracy': '0.9606', 'epoch': '1.439'}
+{'loss': '0.1371', 'grad_norm': '0.1348', 'learning_rate': '0.0001923', 'entropy': '0.1631', 'num_tokens': '2.686e+06', 'mean_token_accuracy': '0.963', 'epoch': '1.462'}
+{'loss': '0.1531', 'grad_norm': '0.1624', 'learning_rate': '0.0001919', 'entropy': '0.1773', 'num_tokens': '2.727e+06', 'mean_token_accuracy': '0.9618', 'epoch': '1.485'}
+{'loss': '0.1338', 'grad_norm': '0.1358', 'learning_rate': '0.0001914', 'entropy': '0.1566', 'num_tokens': '2.77e+06', 'mean_token_accuracy': '0.9639', 'epoch': '1.507'}
+{'loss': '0.1464', 'grad_norm': '0.1281', 'learning_rate': '0.0001909', 'entropy': '0.1631', 'num_tokens': '2.81e+06', 'mean_token_accuracy': '0.9626', 'epoch': '1.53'}
+{'loss': '0.1429', 'grad_norm': '0.09746', 'learning_rate': '0.0001904', 'entropy': '0.1626', 'num_tokens': '2.851e+06', 'mean_token_accuracy': '0.9629', 'epoch': '1.553'}
+{'loss': '0.1259', 'grad_norm': '0.07691', 'learning_rate': '0.0001899', 'entropy': '0.1507', 'num_tokens': '2.897e+06', 'mean_token_accuracy': '0.966', 'epoch': '1.576'}
+{'loss': '0.1441', 'grad_norm': '0.1477', 'learning_rate': '0.0001894', 'entropy': '0.1649', 'num_tokens': '2.938e+06', 'mean_token_accuracy': '0.9632', 'epoch': '1.599'}
+{'loss': '0.1415', 'grad_norm': '0.1507', 'learning_rate': '0.0001889', 'entropy': '0.1668', 'num_tokens': '2.981e+06', 'mean_token_accuracy': '0.9612', 'epoch': '1.622'}
+{'loss': '0.1396', 'grad_norm': '0.1487', 'learning_rate': '0.0001883', 'entropy': '0.1556', 'num_tokens': '3.024e+06', 'mean_token_accuracy': '0.9645', 'epoch': '1.645'}
+{'loss': '0.134', 'grad_norm': '0.1676', 'learning_rate': '0.0001878', 'entropy': '0.1616', 'num_tokens': '3.068e+06', 'mean_token_accuracy': '0.9657', 'epoch': '1.667'}
+{'loss': '0.1385', 'grad_norm': '0.09925', 'learning_rate': '0.0001872', 'entropy': '0.1579', 'num_tokens': '3.109e+06', 'mean_token_accuracy': '0.9648', 'epoch': '1.69'}
+{'loss': '0.1404', 'grad_norm': '0.1203', 'learning_rate': '0.0001867', 'entropy': '0.1592', 'num_tokens': '3.149e+06', 'mean_token_accuracy': '0.9644', 'epoch': '1.713'}
+{'loss': '0.146', 'grad_norm': '0.104', 'learning_rate': '0.0001861', 'entropy': '0.1662', 'num_tokens': '3.19e+06', 'mean_token_accuracy': '0.9622', 'epoch': '1.736'}
+{'loss': '0.1401', 'grad_norm': '0.1111', 'learning_rate': '0.0001855', 'entropy': '0.1585', 'num_tokens': '3.231e+06', 'mean_token_accuracy': '0.965', 'epoch': '1.759'}
+{'loss': '0.14', 'grad_norm': '0.1158', 'learning_rate': '0.0001849', 'entropy': '0.1606', 'num_tokens': '3.271e+06', 'mean_token_accuracy': '0.9633', 'epoch': '1.782'}
+{'loss': '0.1372', 'grad_norm': '0.09728', 'learning_rate': '0.0001842', 'entropy': '0.157', 'num_tokens': '3.312e+06', 'mean_token_accuracy': '0.9638', 'epoch': '1.805'}
+{'loss': '0.1314', 'grad_norm': '0.09188', 'learning_rate': '0.0001836', 'entropy': '0.1451', 'num_tokens': '3.354e+06', 'mean_token_accuracy': '0.9657', 'epoch': '1.827'}
+{'loss': '0.1323', 'grad_norm': '0.104', 'learning_rate': '0.000183', 'entropy': '0.1553', 'num_tokens': '3.395e+06', 'mean_token_accuracy': '0.9642', 'epoch': '1.85'}
+{'loss': '0.1238', 'grad_norm': '0.2756', 'learning_rate': '0.0001823', 'entropy': '0.1419', 'num_tokens': '3.444e+06', 'mean_token_accuracy': '0.9658', 'epoch': '1.873'}
+{'loss': '0.1315', 'grad_norm': '0.1098', 'learning_rate': '0.0001816', 'entropy': '0.1579', 'num_tokens': '3.486e+06', 'mean_token_accuracy': '0.9651', 'epoch': '1.896'}
+{'loss': '0.1363', 'grad_norm': '0.1075', 'learning_rate': '0.000181', 'entropy': '0.1562', 'num_tokens': '3.525e+06', 'mean_token_accuracy': '0.9643', 'epoch': '1.919'}
+{'loss': '0.1313', 'grad_norm': '0.08886', 'learning_rate': '0.0001803', 'entropy': '0.1469', 'num_tokens': '3.568e+06', 'mean_token_accuracy': '0.9658', 'epoch': '1.942'}
+{'loss': '0.1238', 'grad_norm': '0.09997', 'learning_rate': '0.0001796', 'entropy': '0.1486', 'num_tokens': '3.612e+06', 'mean_token_accuracy': '0.9678', 'epoch': '1.965'}
+{'loss': '0.1172', 'grad_norm': '0.1719', 'learning_rate': '0.0001789', 'entropy': '0.1465', 'num_tokens': '3.657e+06', 'mean_token_accuracy': '0.9681', 'epoch': '1.987'}
+{'loss': '0.1228', 'grad_norm': '0.1243', 'learning_rate': '0.0001782', 'entropy': '0.1447', 'num_tokens': '3.695e+06', 'mean_token_accuracy': '0.9656', 'epoch': '2.009'}
+{'loss': '0.1175', 'grad_norm': '0.1122', 'learning_rate': '0.0001774', 'entropy': '0.1332', 'num_tokens': '3.737e+06', 'mean_token_accuracy': '0.9691', 'epoch': '2.032'}
+{'loss': '0.1094', 'grad_norm': '0.116', 'learning_rate': '0.0001767', 'entropy': '0.1239', 'num_tokens': '3.78e+06', 'mean_token_accuracy': '0.9711', 'epoch': '2.055'}
+{'loss': '0.1169', 'grad_norm': '0.09172', 'learning_rate': '0.0001759', 'entropy': '0.1368', 'num_tokens': '3.821e+06', 'mean_token_accuracy': '0.9684', 'epoch': '2.078'}
+{'loss': '0.1155', 'grad_norm': '0.1186', 'learning_rate': '0.0001752', 'entropy': '0.1372', 'num_tokens': '3.862e+06', 'mean_token_accuracy': '0.9694', 'epoch': '2.101'}
+{'loss': '0.1171', 'grad_norm': '0.1299', 'learning_rate': '0.0001744', 'entropy': '0.133', 'num_tokens': '3.902e+06', 'mean_token_accuracy': '0.9665', 'epoch': '2.123'}
+{'loss': '0.1133', 'grad_norm': '0.1387', 'learning_rate': '0.0001736', 'entropy': '0.1254', 'num_tokens': '3.944e+06', 'mean_token_accuracy': '0.9697', 'epoch': '2.146'}
+{'loss': '0.1131', 'grad_norm': '0.09189', 'learning_rate': '0.0001728', 'entropy': '0.1436', 'num_tokens': '3.988e+06', 'mean_token_accuracy': '0.9681', 'epoch': '2.169'}
+{'loss': '0.115', 'grad_norm': '0.09051', 'learning_rate': '0.000172', 'entropy': '0.1333', 'num_tokens': '4.029e+06', 'mean_token_accuracy': '0.9678', 'epoch': '2.192'}
+{'loss': '0.1245', 'grad_norm': '0.07752', 'learning_rate': '0.0001712', 'entropy': '0.1388', 'num_tokens': '4.069e+06', 'mean_token_accuracy': '0.9664', 'epoch': '2.215'}
+{'loss': '0.1165', 'grad_norm': '0.1251', 'learning_rate': '0.0001704', 'entropy': '0.1316', 'num_tokens': '4.108e+06', 'mean_token_accuracy': '0.9697', 'epoch': '2.238'}
+{'loss': '0.1092', 'grad_norm': '0.1156', 'learning_rate': '0.0001695', 'entropy': '0.1238', 'num_tokens': '4.153e+06', 'mean_token_accuracy': '0.9701', 'epoch': '2.261'}
+{'loss': '0.1265', 'grad_norm': '0.2116', 'learning_rate': '0.0001687', 'entropy': '0.1443', 'num_tokens': '4.192e+06', 'mean_token_accuracy': '0.965', 'epoch': '2.283'}
+{'loss': '0.1096', 'grad_norm': '0.117', 'learning_rate': '0.0001679', 'entropy': '0.1329', 'num_tokens': '4.236e+06', 'mean_token_accuracy': '0.969', 'epoch': '2.306'}
+{'loss': '0.1156', 'grad_norm': '0.2638', 'learning_rate': '0.000167', 'entropy': '0.1353', 'num_tokens': '4.278e+06', 'mean_token_accuracy': '0.9675', 'epoch': '2.329'}
+{'loss': '0.1195', 'grad_norm': '0.1303', 'learning_rate': '0.0001661', 'entropy': '0.1331', 'num_tokens': '4.318e+06', 'mean_token_accuracy': '0.9671', 'epoch': '2.352'}
+{'loss': '0.1182', 'grad_norm': '0.1881', 'learning_rate': '0.0001653', 'entropy': '0.133', 'num_tokens': '4.357e+06', 'mean_token_accuracy': '0.9681', 'epoch': '2.375'}
+{'loss': '0.1109', 'grad_norm': '0.1408', 'learning_rate': '0.0001644', 'entropy': '0.1296', 'num_tokens': '4.4e+06', 'mean_token_accuracy': '0.9689', 'epoch': '2.398'}
+{'loss': '0.112', 'grad_norm': '0.1344', 'learning_rate': '0.0001635', 'entropy': '0.1263', 'num_tokens': '4.444e+06', 'mean_token_accuracy': '0.9693', 'epoch': '2.421'}
+{'loss': '0.1246', 'grad_norm': '0.08933', 'learning_rate': '0.0001626', 'entropy': '0.1421', 'num_tokens': '4.483e+06', 'mean_token_accuracy': '0.9668', 'epoch': '2.443'}
+{'loss': '0.1182', 'grad_norm': '0.1409', 'learning_rate': '0.0001617', 'entropy': '0.1366', 'num_tokens': '4.526e+06', 'mean_token_accuracy': '0.9681', 'epoch': '2.466'}
+{'loss': '0.1081', 'grad_norm': '0.09376', 'learning_rate': '0.0001607', 'entropy': '0.1308', 'num_tokens': '4.571e+06', 'mean_token_accuracy': '0.9696', 'epoch': '2.489'}
+{'loss': '0.1099', 'grad_norm': '0.09495', 'learning_rate': '0.0001598', 'entropy': '0.133', 'num_tokens': '4.616e+06', 'mean_token_accuracy': '0.9688', 'epoch': '2.512'}
+{'loss': '0.1072', 'grad_norm': '0.09712', 'learning_rate': '0.0001589', 'entropy': '0.1238', 'num_tokens': '4.661e+06', 'mean_token_accuracy': '0.9689', 'epoch': '2.535'}
+{'loss': '0.1011', 'grad_norm': '0.106', 'learning_rate': '0.0001579', 'entropy': '0.1188', 'num_tokens': '4.705e+06', 'mean_token_accuracy': '0.9723', 'epoch': '2.558'}
+{'loss': '0.1063', 'grad_norm': '0.09243', 'learning_rate': '0.000157', 'entropy': '0.1248', 'num_tokens': '4.748e+06', 'mean_token_accuracy': '0.9709', 'epoch': '2.581'}
+{'loss': '0.1088', 'grad_norm': '0.1205', 'learning_rate': '0.000156', 'entropy': '0.1234', 'num_tokens': '4.792e+06', 'mean_token_accuracy': '0.9696', 'epoch': '2.603'}
+{'loss': '0.1156', 'grad_norm': '0.1223', 'learning_rate': '0.000155', 'entropy': '0.134', 'num_tokens': '4.835e+06', 'mean_token_accuracy': '0.9676', 'epoch': '2.626'}
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen_lora_finetune.py", line 403, in <module>
+    main(
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen_lora_finetune.py", line 285, in main
+    trainer.train()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1425, in train
+    return inner_training_loop(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1507, in _inner_training_loop
+    self._run_epoch(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1735, in _run_epoch
+    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/trl/trainer/sft_trainer.py", line 1388, in training_step
+    return super().training_step(*args, **kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1935, in training_step
+    self.accelerator.backward(loss, **kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2834, in backward
+    self.scaler.scale(loss).backward(**kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/_tensor.py", line 631, in backward
+    torch.autograd.backward(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/autograd/__init__.py", line 381, in backward
+    _engine_run_backward(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen_lora_finetune.py", line 403, in <module>
+    main(
+  File "/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen_lora_finetune.py", line 285, in main
+    trainer.train()
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1425, in train
+    return inner_training_loop(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1507, in _inner_training_loop
+    self._run_epoch(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1735, in _run_epoch
+    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/trl/trainer/sft_trainer.py", line 1388, in training_step
+    return super().training_step(*args, **kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/transformers/trainer.py", line 1935, in training_step
+    self.accelerator.backward(loss, **kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/accelerate/accelerator.py", line 2834, in backward
+    self.scaler.scale(loss).backward(**kwargs)
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/_tensor.py", line 631, in backward
+    torch.autograd.backward(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/autograd/__init__.py", line 381, in backward
+    _engine_run_backward(
+  File "/home/zl3466/anaconda3/envs/sql/lib/python3.10/site-packages/torch/autograd/graph.py", line 869, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
