@@ -1,0 +1,34 @@
+python generate-finetune-data.py --mode both --sql_type sql --skeleton
+
+# train baseline
+python qwen_lora_finetune.py \
+  --train_data /home/zl3466/Documents/cmu/18786/proj/18786-project/data/train_sql_chatgpt.jsonl \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --output_dir ./qwen3b-lora-adapter \
+  --run_name qwen3b-sql-baseline-3000 \
+  --max_steps 3000
+
+# train skeleton
+python qwen_lora_finetune.py \
+  --train_data /home/zl3466/Documents/cmu/18786/proj/18786-project/data/train_sql_skeleton.jsonl \
+  --output_dir ./qwen3b-lora-adapter-skeleton \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --run_name qwen3b-sql-skeleton-3000 \
+  --max_steps 3000
+
+
+
+
+# with base qwen3b instruct
+python demo.py
+
+# with a ckpt
+python demo.py --adapter_path ./qwen3b-lora-adapter/checkpoint-3000
+
+
+
+python evaluation.py \
+--plug_value \
+--input predictions/qwen_3b_lora_2sentsprompt.txt
+  
+
