@@ -1,3 +1,5 @@
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.3/flash_attn-2.7.3+cu11torch2.6cxx11abiTRUE-cp310-cp310-linux_x86_64.whl
+
 python generate-finetune-data.py --mode both --sql_type sql --skeleton
 
 # train baseline
@@ -45,3 +47,37 @@ python evaluation.py \
 --input predictions/qwen_3b_lora_2sentsprompt.txt
   
 
+
+# gen prediction
+# qwen3b
+python eval/gen_predictions_llama3.py \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --validation_data data/validation_sql.json \
+  --output eval/predictions/qwen3b.txt \
+  --attn_implementation flash_attention_2 \
+  --batch_size 12
+
+# base lora
+python eval/gen_predictions_llama3.py \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --adapter_path ./qwen3b-lora-adapter/checkpoint-3000 \
+  --validation_data data/validation_sql.json \
+  --output eval/predictions/qwen3b_lora_ckpt3000.txt \
+  --attn_implementation flash_attention_2 \
+  --batch_size 12
+
+python eval/gen_predictions_llama3.py \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --adapter_path ./qwen3b-lora-adapter-chatgpt/checkpoint-3000 \
+  --validation_data data/validation_sql.json \
+  --output eval/predictions/qwen3b_lora-chatgpt_ckpt3000.txt \
+  --attn_implementation flash_attention_2 \
+  --batch_size 12
+
+python eval/gen_predictions_llama3.py \
+  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --adapter_path ./qwen3b-lora-adapter-skeleton/checkpoint-3000 \
+  --validation_data data/validation_sql.json \
+  --output eval/predictions/qwen3b_lora-skeleton_ckpt3000.txt \
+  --attn_implementation flash_attention_2 \
+  --batch_size 12

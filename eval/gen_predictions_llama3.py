@@ -7,11 +7,38 @@ for the validation dataset, and saves predictions for evaluation.
 
 import json
 import argparse
+import dataclasses
+import inspect
 import os
 import torch
+from typing import Optional
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import LoraConfig, PeftModel
 from tqdm import tqdm
 import re
+
+
+def _lora_config_from_adapter_dir(adapter_path: str) -> LoraConfig:
+    """
+    Load adapter_config.json but only pass fields supported by this installed peft version.
+    Newer trainers (e.g. recent LLaMA-Factory) may save keys like alora_invocation_tokens that
+    older LoraConfig rejects.
+    """
+    cfg_path = os.path.join(adapter_path, "adapter_config.json")
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+    try:
+        valid = {f.name for f in dataclasses.fields(LoraConfig)}
+    except TypeError:
+        valid = set(inspect.signature(LoraConfig.__init__).parameters) - {"self"}
+    filtered = {k: v for k, v in raw.items() if k in valid}
+    dropped = set(raw) - set(filtered)
+    if dropped:
+        print(
+            f"   Note: ignoring adapter_config keys not in this peft's LoraConfig: "
+            f"{sorted(dropped)}"
+        )
+    return LoraConfig(**filtered)
 
 def format_sql_response(response_text: str, extract_skeleton: bool = False) -> str:
     """
@@ -86,6 +113,61 @@ SELECT
 """
     return prompt
 
+def generate_sql_batch(
+    model,
+    tokenizer,
+    prompts: list,
+    max_new_tokens: int = 512,
+    temperature: float = 0.0,
+    top_p: float = 0.9,
+    do_sample: bool = False,
+    stop_sequences: list = None,
+) -> list:
+    """
+    Generate SQL for multiple prompts in one forward pass (left-padded for decoder-only LMs).
+
+    Larger batch sizes improve GPU utilization when VRAM allows.
+    """
+    if not prompts:
+        return []
+    tokenizer.padding_side = "left"
+    inputs = tokenizer(
+        prompts,
+        return_tensors="pt",
+        truncation=True,
+        max_length=2048,
+        padding=True,
+    )
+    device = next(model.parameters()).device
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    gen_kwargs = {
+        "max_new_tokens": max_new_tokens,
+        "pad_token_id": tokenizer.pad_token_id,
+        "eos_token_id": tokenizer.eos_token_id,
+        "do_sample": do_sample,
+    }
+    if do_sample:
+        gen_kwargs["temperature"] = temperature
+        gen_kwargs["top_p"] = top_p
+
+    with torch.inference_mode():
+        outputs = model.generate(**inputs, **gen_kwargs)
+
+    input_lens = inputs["attention_mask"].sum(dim=1).tolist()
+    results = []
+    for j in range(len(prompts)):
+        input_len = int(input_lens[j])
+        gen_ids = outputs[j, input_len:]
+        generated_text = tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
+        if stop_sequences:
+            for stop_seq in stop_sequences:
+                if stop_seq in generated_text:
+                    generated_text = generated_text.split(stop_seq)[0].strip()
+        results.append(generated_text)
+    return results
+
+
 def generate_sql(
     model,
     tokenizer,
@@ -112,64 +194,55 @@ def generate_sql(
     Returns:
         Generated SQL query
     """
-    # Tokenize input
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
-    
-    # Move to same device as model
-    device = next(model.parameters()).device
-    inputs = {k: v.to(device) for k, v in inputs.items()}
-    
-    # Generate
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature if do_sample else None,
-            top_p=top_p if do_sample else None,
-            do_sample=do_sample,
-            pad_token_id=tokenizer.eos_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-        )
-    
-    # Decode response
-    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
-    # Extract only the generated part (remove prompt)
-    generated_text = generated_text[len(prompt):].strip()
-    
-    # Stop at certain sequences
-    if stop_sequences:
-        for stop_seq in stop_sequences:
-            if stop_seq in generated_text:
-                generated_text = generated_text.split(stop_seq)[0].strip()
-    
-    return generated_text
+    return generate_sql_batch(
+        model,
+        tokenizer,
+        [prompt],
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        do_sample=do_sample,
+        stop_sequences=stop_sequences,
+    )[0]
 
-def load_model_and_tokenizer(model_name: str, device: str = "auto", load_in_8bit: bool = False):
+def load_model_and_tokenizer(
+    model_name: str,
+    device: str = "auto",
+    load_in_8bit: bool = False,
+    adapter_path: Optional[str] = None,
+    attn_implementation: Optional[str] = None,
+    compile_model: bool = False,
+):
     """
-    Load Llama3 model and tokenizer.
-    
+    Load causal LM and tokenizer. If adapter_path is set, loads a PEFT LoRA adapter on top of model_name.
+
     Args:
-        model_name: HuggingFace model name or path
+        model_name: HuggingFace model id or local path to **base** weights (also used for tokenizer when adapter_path is set)
         device: Device to load on ("auto", "cuda", "cpu")
         load_in_8bit: Whether to use 8-bit quantization
-        
+        adapter_path: Optional directory with LoRA adapter (e.g. ./qwen3b-lora-adapter/checkpoint-3000)
+
     Returns:
         model, tokenizer
     """
     print(f"Loading model: {model_name}")
     
-    # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # Load tokenizer (always from base / merged checkpoint)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.padding_side = "left"
     
     # Set padding token if not exists
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
+    if attn_implementation is None:
+        attn_implementation = "sdpa" if torch.cuda.is_available() else "eager"
+
     # Load model
     model_kwargs = {
         "trust_remote_code": True,
         "torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32,
+        "attn_implementation": attn_implementation,
     }
     
     if load_in_8bit:
@@ -183,14 +256,24 @@ def load_model_and_tokenizer(model_name: str, device: str = "auto", load_in_8bit
         model_kwargs["device_map"] = "auto"
     
     model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
+
+    if adapter_path:
+        print(f"Loading LoRA adapter: {adapter_path}")
+        lora_config = _lora_config_from_adapter_dir(adapter_path)
+        model = PeftModel.from_pretrained(model, adapter_path, config=lora_config)
     
     if device == "cpu":
         model = model.to(device)
     
     model.eval()
+
+    if compile_model and hasattr(torch, "compile") and device == "cuda":
+        print("Compiling model with torch.compile (first batches may be slow)...")
+        model = torch.compile(model, mode="reduce-overhead", fullgraph=False)
     
     print(f"✅ Model loaded on {device}")
     print(f"   Model dtype: {model.dtype}")
+    print(f"   Attention: {attn_implementation}")
     
     return model, tokenizer
 
@@ -205,6 +288,7 @@ def process_dataset(
     use_instruction_format: bool = True,
     extract_skeleton: bool = False,
     resume_from: int = 0,
+    batch_size: int = 1,
 ):
     """
     Process validation dataset and generate predictions.
@@ -220,6 +304,7 @@ def process_dataset(
         use_instruction_format: Use instruction format or ChatGPT format
         extract_skeleton: Extract SQL from skeleton format
         resume_from: Index to resume from (for resuming interrupted runs)
+        batch_size: Number of examples per generate() call (increase if VRAM allows)
     """
     # Check if we're resuming
     existing_predictions = []
@@ -231,46 +316,72 @@ def process_dataset(
     # Open output file in append mode if resuming
     mode = 'a' if resume_from > 0 else 'w'
     
+    subset = dataset[resume_from:]
+    stop_sequences = ["###", "\n\n\n"]
+    do_sample = temperature > 0
+
     with open(output_file, mode) as f:
-        # Process each entry
-        for i, entry in enumerate(tqdm(dataset, desc="Generating predictions")):
-            # Skip if already processed
-            if i < resume_from:
-                continue
-            
-            try:
-                # Build prompt
-                prompt = build_prompt(
-                    entry['question'],
-                    entry['db_info'],
-                    use_instruction_format=use_instruction_format
+        if batch_size < 1:
+            batch_size = 1
+
+        pbar = tqdm(total=len(subset), desc="Generating predictions", initial=0)
+        batch_start = 0
+        while batch_start < len(subset):
+            chunk = subset[batch_start : batch_start + batch_size]
+            prompts = [
+                build_prompt(
+                    e["question"],
+                    e["db_info"],
+                    use_instruction_format=use_instruction_format,
                 )
-                
-                # Generate SQL
-                raw_response = generate_sql(
+                for e in chunk
+            ]
+            global_idx = resume_from + batch_start
+            try:
+                raw_responses = generate_sql_batch(
                     model,
                     tokenizer,
-                    prompt,
+                    prompts,
                     max_new_tokens=max_new_tokens,
                     temperature=temperature,
                     top_p=top_p,
-                    do_sample=(temperature > 0),
-                    stop_sequences=["###", "\n\n\n"],
+                    do_sample=do_sample,
+                    stop_sequences=stop_sequences,
                 )
-                
-                # Format response
-                sql = format_sql_response(raw_response, extract_skeleton=extract_skeleton)
-                
-                # Write to file
-                f.write(sql + "\n")
-                f.flush()  # Ensure it's written immediately
-                
-            except Exception as e:
-                print(f"\n❌ Error processing index {i}: {e}")
-                # Write empty line as placeholder
-                f.write("\n")
+            except Exception as batch_err:
+                print(f"\n⚠️ Batch generate failed at index {global_idx} ({batch_err}); retrying one-by-one.")
+                raw_responses = []
+                for p in prompts:
+                    try:
+                        raw_responses.append(
+                            generate_sql(
+                                model,
+                                tokenizer,
+                                p,
+                                max_new_tokens=max_new_tokens,
+                                temperature=temperature,
+                                top_p=top_p,
+                                do_sample=do_sample,
+                                stop_sequences=stop_sequences,
+                            )
+                        )
+                    except Exception as e:
+                        print(f"\n❌ Error processing: {e}")
+                        raw_responses.append("")
+
+            for raw_response in raw_responses:
+                try:
+                    sql = format_sql_response(raw_response, extract_skeleton=extract_skeleton)
+                    f.write(sql + "\n")
+                except Exception as e:
+                    print(f"\n❌ Error formatting response: {e}")
+                    f.write("\n")
                 f.flush()
-                continue
+
+            pbar.update(len(chunk))
+            batch_start += len(chunk)
+
+        pbar.close()
     
     print(f"\n✅ Predictions saved to: {output_file}")
 
@@ -282,7 +393,13 @@ def main():
         '--model_name',
         type=str,
         default='meta-llama/Meta-Llama-3-8B-Instruct',
-        help='HuggingFace model name or local path. Options: meta-llama/Meta-Llama-3-8B-Instruct, meta-llama/Meta-Llama-3-8B, or local path'
+        help='HuggingFace model id or local path to base/merged weights (tokenizer loads from here too)',
+    )
+    parser.add_argument(
+        '--adapter_path',
+        type=str,
+        default=None,
+        help='Optional directory with a LoRA adapter (PEFT). Base weights come from --model_name.',
     )
     parser.add_argument(
         '--validation_data',
@@ -342,8 +459,30 @@ def main():
         default=0,
         help='Resume from this index (for resuming interrupted runs)'
     )
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=4,
+        help='Examples per generate() call. Increase (e.g. 8–16) if VRAM headroom; reduces GPU idle time.',
+    )
+    parser.add_argument(
+        '--attn_implementation',
+        type=str,
+        default='auto',
+        choices=['auto', 'eager', 'sdpa', 'flash_attention_2'],
+        help='Attention: auto uses sdpa on CUDA (fast) and eager on CPU; flash_attention_2 requires flash-attn.',
+    )
+    parser.add_argument(
+        '--compile_model',
+        action='store_true',
+        help='Wrap the model with torch.compile (PyTorch 2+; first steps are slow, then often faster).',
+    )
     
     args = parser.parse_args()
+
+    if torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
     
     # Load validation dataset
     print(f"Loading validation dataset from: {args.validation_data}")
@@ -352,10 +491,14 @@ def main():
     print(f"✅ Loaded {len(dataset)} validation examples")
     
     # Load model and tokenizer
+    attn_impl = None if args.attn_implementation == 'auto' else args.attn_implementation
     model, tokenizer = load_model_and_tokenizer(
         args.model_name,
         device=args.device,
-        load_in_8bit=args.load_in_8bit
+        load_in_8bit=args.load_in_8bit,
+        adapter_path=args.adapter_path,
+        attn_implementation=attn_impl,
+        compile_model=args.compile_model,
     )
     
     # Create output directory if needed
@@ -377,6 +520,7 @@ def main():
         use_instruction_format=not args.use_chatgpt_format,
         extract_skeleton=args.extract_skeleton,
         resume_from=args.resume_from,
+        batch_size=args.batch_size,
     )
     
     print(f"\n✅ Done! Predictions saved to: {args.output}")
