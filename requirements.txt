@@ -15,3 +15,4 @@ trl
 accelerate
 bitsandbytes
 wandb
+streamlit
