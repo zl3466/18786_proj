@@ -23,7 +23,7 @@ class QwenLoraConfig:
     """Configuration class for Qwen LoRA training (no quantization)"""
     
     # Model settings
-    MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
+    MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct"
     TRUST_REMOTE_CODE = True
     
     # LoRA settings
@@ -255,7 +255,8 @@ def main(
     
     # Load training data
     train_dataset = load_training_data(train_data_path, is_eval=False)
-    
+    # print("train_dataset[0]:")
+    # print(train_dataset[0])
     # Create training arguments (no evaluation)
     training_args = create_training_arguments(config, eval_dataset=None)
     

@@ -1,3 +1,7 @@
+### Qwen2.5-3B ChatGPT-format SFT (ShareGPT jsonl)
+# Data: train/dataset_info.json → sql_chatgpt → ../data/train_sql_chatgpt.jsonl
+# Run from project root so dataset_dir: train resolves to ./train/
+
 ### model
 model_name_or_path: Qwen/Qwen2.5-3B-Instruct
 trust_remote_code: true
@@ -14,7 +18,7 @@ quantization_bit: 4
 quantization_type: nf4
 
 ### dataset
-dataset: sql_skeleton
+dataset: sql_chatgpt
 dataset_dir: train
 template: default
 cutoff_len: 2048
@@ -22,17 +26,16 @@ overwrite_cache: false
 preprocessing_num_workers: 16
 
 ### output
-output_dir: ./qwen-skeleton-qlora-adapter
+output_dir: ./qwen-base-chatgpt-qlora-adapter
 logging_steps: 10
 save_steps: 500
 plot_loss: true
 overwrite_output_dir: true
 
 ### logging (Weights & Biases)
-# Matches qwen_lora_finetune.py CLI: export before training, or pass env on one line:
-#   WANDB_ENTITY=zl3466-new-york-university WANDB_PROJECT=18786_text2sql llamafactory-cli train ...
+# WANDB_ENTITY=... WANDB_PROJECT=... llamafactory-cli train train/qwen_base_llamafactory.yaml
 report_to: wandb
-run_name: qwen3b-sql-base-gpt-3000
+run_name: qwen3b-chatgpt-qlora-3000
 
 ### train
 per_device_train_batch_size: 4
@@ -50,4 +53,3 @@ group_by_length: true
 ### eval
 val_size: 0.0
 eval_strategy: "no"
-
