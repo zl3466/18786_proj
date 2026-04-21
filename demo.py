@@ -12,7 +12,7 @@ from peft import LoraConfig, PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-from qwen_lora_finetune_mine import QwenLoraConfig
+from train.qwen_lora_finetune import QwenLoraConfig
 
 
 def parse_args():

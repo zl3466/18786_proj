@@ -1,13 +1,19 @@
 """
-Generate SQL predictions using fine-tuned Llama-3.2-3B-Instruct + LoRA adapter.
+Generate SQL predictions with Qwen2.5 + optional LoRA.
+
+Loading matches train/qwen_lora_finetune: full-precision base (float32), tokenizer from base
+(checkpoint tokenizers are unreliable). LoRA is loaded with config keys filtered for this peft version.
 """
 
+from typing import Optional
+
+import inspect
 import json
 import argparse
 import os
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-from peft import PeftModel
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import LoraConfig, PeftModel
 from tqdm import tqdm
 
 
@@ -27,43 +33,47 @@ def build_prompt(question: str, db_info: str) -> str:
 def format_sql_response(text: str) -> str:
     text = text.strip().replace("\n", " ").replace("\t", " ")
     text = " ".join(text.split())
-    # Stop at common delimiters that signal end of SQL
     for stop in ["###", "<|", "\x00"]:
         if stop in text:
             text = text.split(stop)[0].strip()
-    # Prepend SELECT if missing (model was trained to output everything after SELECT)
     if not text.upper().startswith("SELECT"):
         text = "SELECT " + text
     text = text.rstrip(".,;")
     return text
 
 
-def load_model(base_model: str, adapter_path: str = None):
-    print(f"Loading base model: {base_model}")
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
-    )
-    tokenizer_path = adapter_path if adapter_path else base_model
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_path,
-        trust_remote_code=True,
-    )
+def load_model(base_model: str, adapter_path: Optional[str] = None):
+    """Same dtype rules as qwen_lora_finetune default (FP16 mixed train → float32 base weights)."""
+    print(f"Loading tokenizer: {base_model}")
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
+    except (AttributeError, TypeError, ValueError):
+        tokenizer = AutoTokenizer.from_pretrained(
+            base_model, trust_remote_code=True, use_fast=False
+        )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    print(f"Loading base model (float32): {base_model}")
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        quantization_config=bnb_config,
-        device_map="auto",
         trust_remote_code=True,
+        device_map="auto",
+        torch_dtype=torch.float32,
     )
+    model.config.use_cache = True
+
     if adapter_path:
         print(f"Loading LoRA adapter: {adapter_path}")
-        model = PeftModel.from_pretrained(model, adapter_path)
+        cfg_path = os.path.join(adapter_path, "adapter_config.json")
+        with open(cfg_path, encoding="utf-8") as f:
+            raw = json.load(f)
+        allowed = set(inspect.signature(LoraConfig.__init__).parameters) - {"self"}
+        peft_config = LoraConfig(**{k: v for k, v in raw.items() if k in allowed})
+        model = PeftModel.from_pretrained(model, adapter_path, config=peft_config)
     else:
-        print("No adapter — running base model only")
+        print("No adapter — base model only")
+
     model.eval()
     return model, tokenizer
 
@@ -98,10 +108,15 @@ def generate_sql_batch(model, tokenizer, prompts: list, max_new_tokens: int = 12
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_model", type=str, default="meta-llama/Llama-3.2-3B-Instruct")
+    parser.add_argument(
+        "--base_model",
+        type=str,
+        default="Qwen/Qwen2.5-3B-Instruct",
+        help="Same base as training (qwen_lora_finetune).",
+    )
     parser.add_argument("--adapter_path", type=str, default=None)
     parser.add_argument("--validation_data", type=str, default="data/validation_sql_clear.json")
-    parser.add_argument("--output", type=str, default="predictions/llama3b_sql_chatgpt.txt")
+    parser.add_argument("--output", type=str, default="predictions/qwen3b_sql.txt")
     parser.add_argument("--max_new_tokens", type=int, default=128)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--resume_from", type=int, default=0)

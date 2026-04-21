@@ -1,13 +1,15 @@
 https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.3/flash_attn-2.7.3+cu11torch2.6cxx11abiTRUE-cp310-cp310-linux_x86_64.whl
 
-python generate-finetune-data.py --mode both --sql_type sql --skeleton
+python generate-finetune-data.py --mode both --sql_type sql --chatgpt_finetune
 
 # train baseline
 python ./train/qwen_lora_finetune.py \
-  --train_data /home/zl3466/Documents/cmu/18786/proj/18786-project/data/train_sql.jsonl \
+  --train_data data/train_sql_chatgpt.jsonl \
   --model_name Qwen/Qwen2.5-3B-Instruct \
   --output_dir ./qwen3b-lora-adapter_base \
-  --run_name qwen3b-sql-base-3000 \
+  --wandb_entity zl3466-new-york-university \
+  --wandb_project 18786_text2sql \
+  --run_name qwen3b-sql-base-gpt-3000 \
   --max_steps 3000
 
 
@@ -22,12 +24,24 @@ python train/qwen_lora_finetune.py \
 
 
 # train skeleton
-python qwen_lora_finetune.py \
-  --train_data /home/zl3466/Documents/cmu/18786/proj/18786-project/data/train_sql_skeleton.jsonl \
+python ./train/qwen_lora_finetune.py \
+  --train_data data/train_sql_skeleton.jsonl \
   --output_dir ./qwen3b-lora-adapter-skeleton \
   --model_name Qwen/Qwen2.5-3B-Instruct \
+  --wandb_entity zl3466-new-york-university \
+  --wandb_project 18786_text2sql \
   --run_name qwen3b-sql-skeleton-3000 \
   --max_steps 3000
+
+
+
+
+
+WANDB_ENTITY=zl3466-new-york-university WANDB_PROJECT=18786_text2sql \
+  llamafactory-cli train train/qwen_base_llamafactory.yaml
+
+WANDB_ENTITY=zl3466-new-york-university WANDB_PROJECT=18786_text2sql \
+  llamafactory-cli train train/qwen_skeleton_llamafactory.yaml
 
 
 
@@ -49,35 +63,46 @@ python evaluation.py \
 
 
 # gen prediction
-# qwen3b
+# ----------- qwen3b ----------- 
 python eval/gen_predictions_llama3.py \
-  --model_name Qwen/Qwen2.5-3B-Instruct \
+  --base_model Qwen/Qwen2.5-3B-Instruct \
   --validation_data data/validation_sql.json \
   --output eval/predictions/qwen3b.txt \
-  --attn_implementation flash_attention_2 \
-  --batch_size 12
+  --prompt_format gpt \
+  --batch_size 64 
 
-# base lora
-python eval/gen_predictions_llama3.py \
-  --model_name Qwen/Qwen2.5-3B-Instruct \
-  --adapter_path ./qwen3b-lora-adapter/checkpoint-3000 \
+# ----------- lora ----------- 
+python eval/gen_predictions_qwen.py \
+  --base_model Qwen/Qwen2.5-3B-Instruct \
+  --adapter_path ./qwen-base-chatgpt-qlora-adapter/checkpoint-3000 \
   --validation_data data/validation_sql.json \
-  --output eval/predictions/qwen3b_lora_ckpt3000.txt \
-  --attn_implementation flash_attention_2 \
-  --batch_size 12
+  --output eval/predictions/qwen3b_lora_base.txt \
+  --batch_size 64
 
-python eval/gen_predictions_llama3.py \
-  --model_name Qwen/Qwen2.5-3B-Instruct \
-  --adapter_path ./qwen3b-lora-adapter-chatgpt/checkpoint-3000 \
+# ----------- skeleton ----------- 
+python eval/gen_predictions_qwen.py \
+  --base_model Qwen/Qwen2.5-3B-Instruct \
+  --adapter_path ./qwen-skeleton-qlora-adapter/checkpoint-3000 \
   --validation_data data/validation_sql.json \
-  --output eval/predictions/qwen3b_lora-chatgpt_ckpt3000.txt \
-  --attn_implementation flash_attention_2 \
-  --batch_size 12
+  --output eval/predictions/qwen3b_lora-skeleton.txt \
+  --batch_size 64 
 
-python eval/gen_predictions_llama3.py \
-  --model_name Qwen/Qwen2.5-3B-Instruct \
-  --adapter_path ./qwen3b-lora-adapter-skeleton/checkpoint-3000 \
-  --validation_data data/validation_sql.json \
-  --output eval/predictions/qwen3b_lora-skeleton_ckpt3000.txt \
-  --attn_implementation flash_attention_2 \
-  --batch_size 12
+
+
+python evaluation.py --input predictions/qwen3b.txt --gold data/gold.txt --db data/database --etype exec
+python evaluation.py --input predictions/qwen3b_lora_base.txt --gold data/gold.txt --db data/database --etype exec
+python evaluation.py --input predictions/qwen3b_lora-skeleton.txt --gold data/gold.txt --db data/database --etype exec --extract_skeleton
+
+
+
+python evaluation.py --input predictions_llama/llama3b_base.txt --gold data/gold.txt --db data/database --etype exec
+python evaluation.py --input predictions_llama/llama3b_lora_ranked.txt --gold data/gold.txt --db data/database --etype exec
+python evaluation.py --input predictions_llama/llama3b_skeleton.txt --gold data/gold.txt --db data/database --etype exec --extract_skeleton
+
+
+
+
+/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen-base-chatgpt-qlora-adapter/checkpoint-3000
+/home/zl3466/Documents/cmu/18786/proj/18786-project/qwen-skeleton-qlora-adapter/checkpoint-3000
+
+

@@ -56,13 +56,14 @@ def process_dataset(input_dataset_path, output_dataset_path, mode, sql_type, use
             """
             #remove white space from prompt
             prompt = prompt.replace("            ", "")
-            # remove leading "SELECT " from target — completion continues after "SELECT \n" in prompt
+            #remove 'select' from output_sequence
             output_sequence = output_sequence[7:]
-            # Same outer format as Alpaca rows: db_id + single text field (SFT dataset_text_field style).
-            text = "You are an excellent SQL writer.\n\n" + prompt + output_sequence
             output_dataset.append({
-                "db_id": db_id,
-                "text": text,
+                "messages": [
+                    {"role": "system", "content": "You are an excellent SQL writer."},
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": output_sequence},
+                ]
             })
         else: # validation mode
             ground_truth = output_sequence

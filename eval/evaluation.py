@@ -1,16 +1,39 @@
 import os
 import json
+import re
 import sqlite3
 import argparse
 import subprocess
 
-from scripts.process_sql import get_schema, Schema, get_sql
-from scripts.exec_eval import eval_exec_match
+from process_sql import get_schema, Schema, get_sql
+from exec_eval import eval_exec_match
 
 # Flag to disable value evaluation
 DISABLE_VALUE = True
 # Flag to disable distinct in select evaluation
 DISABLE_DISTINCT = True
+
+
+def format_sql_response_for_eval(response_text: str) -> str:
+    """
+    Same cleanup as gen_predictions_llama3_mine.format_sql_response(extract_skeleton=True):
+    take text after last '|' if present, normalize whitespace, ensure SELECT.
+    """
+    response_text = response_text.strip()
+    if "|" in response_text:
+        parts = response_text.split("|")
+        if len(parts) > 1:
+            response_text = parts[-1].strip()
+    response_text = response_text.replace("\n", " ").replace("\t", " ")
+    response_text = " ".join(response_text.split())
+    if not response_text.upper().startswith("SELECT"):
+        select_match = re.search(r"select\s+", response_text, re.IGNORECASE)
+        if select_match:
+            response_text = response_text[select_match.start() :]
+        else:
+            response_text = "SELECT " + response_text
+    response_text = response_text.rstrip(".,;")
+    return response_text
 
 
 CLAUSE_KEYWORDS = ('select', 'from', 'where', 'group', 'order', 'limit', 'intersect', 'union', 'except')
@@ -501,7 +524,17 @@ def print_scores(scores, etype, include_turn_acc=True):
             print_formated_s("exact match", exact_scores, '{:<20.3f}')
 
 
-def evaluate(gold, predict, db_dir, etype, kmaps, plug_value, keep_distinct, progress_bar_for_each_datapoint):
+def evaluate(
+    gold,
+    predict,
+    db_dir,
+    etype,
+    kmaps,
+    plug_value,
+    keep_distinct,
+    progress_bar_for_each_datapoint,
+    extract_skeleton=False,
+):
     all_entries = []
 
     with open('../data/validation_sql_clear.json', 'r') as validation:
@@ -570,10 +603,13 @@ def evaluate(gold, predict, db_dir, etype, kmaps, plug_value, keep_distinct, pro
         for idx, pg in enumerate(zip(p, g)):
             p, g = pg
             p_str = p[0]
+            if extract_skeleton:
+                p_str = format_sql_response_for_eval(p_str)
             p_str = p_str.replace("value", "1")
             g_str, db = g
             db_name = db
             db = os.path.join(db_dir, db, db + ".sqlite")
+            # print(db)
             schema = Schema(get_schema(db))
             g_sql = get_sql(schema, g_str)
             hardness = evaluator.eval_hardness(g_sql)
@@ -728,7 +764,7 @@ def evaluate(gold, predict, db_dir, etype, kmaps, plug_value, keep_distinct, pro
                     scores[level]['partial'][type_]['f1'] = \
                         2.0 * scores[level]['partial'][type_]['acc'] * scores[level]['partial'][type_]['rec'] / (
                         scores[level]['partial'][type_]['rec'] + scores[level]['partial'][type_]['acc'])
-
+    os.makedirs('analysis', exist_ok=True)
     with open('analysis/all_entries.json', 'w') as incorrect_log_file:
         json.dump(all_entries, incorrect_log_file, indent=2)
     incorrect_log_file.close()
@@ -959,7 +995,14 @@ if __name__ == "__main__":
     parser.add_argument('--progress_bar_for_each_datapoint', default=False, action='store_true',
                         help='whether to print progress bar of running test inputs for each datapoint')
     parser.add_argument('--natsql', default=False, action='store_true',
-                        help='whether to convert natsql to sql and evaluate the converted sql')         
+                        help='whether to convert natsql to sql and evaluate the converted sql')
+    parser.add_argument(
+        '--extract_skeleton',
+        default=False,
+        action='store_true',
+        help='If predictions are skeleton | sql, keep only the part after the last | '
+        '(same post-processing as gen_predictions_llama3_mine --extract_skeleton).',
+    )
     args = parser.parse_args()
 
     #Check if input file name containes "natsql"
@@ -993,4 +1036,14 @@ if __name__ == "__main__":
     print("args: ", args)
 
     # Second, evaluate the predicted SQL queries
-    evaluate(args.gold, args.pred, args.db, args.etype, kmaps, args.plug_value, args.keep_distinct, args.progress_bar_for_each_datapoint)
+    evaluate(
+        args.gold,
+        args.pred,
+        args.db,
+        args.etype,
+        kmaps,
+        args.plug_value,
+        args.keep_distinct,
+        args.progress_bar_for_each_datapoint,
+        extract_skeleton=args.extract_skeleton,
+    )
